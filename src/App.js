@@ -1,69 +1,59 @@
 import { useState, useEffect } from "react";
 import ChatContainer from "./components/ChatContainer";
-import SettingsPanel from "./components/SettingsPanel";
+import ChatInput from "./components/ChatInput";
 import LoginRegister from "./components/LoginRegister";
-import logo from "./assets/logo.png";
+import SettingsPanel from "./components/SettingsPanel";
 
-const BACKEND_URL = "https://mavkus-backend.onrender.com";
+import { auth, onAuthStateChanged, logout } from "./firebase";
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [apiStatus, setApiStatus] = useState("checking");
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
 
+  // Controllo login utente
   useEffect(() => {
-    fetch(`${BACKEND_URL}/health`)
-      .then(() => setApiStatus("connected"))
-      .catch(() => setApiStatus("error"));
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
   }, []);
 
-  if (!isAuthenticated) {
-    return <LoginRegister onLogin={() => setIsAuthenticated(true)} />;
+  if (!user) {
+    return <LoginRegister onLogin={() => {}} />; // qui puoi passare funzione per login email/google
   }
 
   return (
-    <div className="min-h-screen bg-bgDark text-textMain relative overflow-hidden">
-      {/* Glow animated background */}
-      <div className="absolute inset-0 bg-animated-glow bg-[length:200%_200%] animate-glow-bg -z-10" />
-
-      {/* HEADER */}
-      <header className="bg-bgCard/80 backdrop-blur-xl border-b border-borderSoft z-10 relative">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src={logo}
-              alt="Mavkus logo"
-              className="w-10 h-10 rounded-xl shadow-glowSm"
-            />
-            <h1 className="text-lg font-bold text-primary tracking-wide">
-              MAVKUS AI
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm">
-            <div
-              className={`w-2.5 h-2.5 rounded-full ${
-                apiStatus === "connected"
-                  ? "bg-accentCyan shadow-[0_0_8px_#22D3EE]"
-                  : "bg-red-500"
-              }`}
-            />
-            <span className="text-textMuted">{apiStatus}</span>
-          </div>
+    <div className="min-h-screen flex flex-col bg-bgDark">
+      <header className="flex justify-between items-center p-4 bg-bgCard/90 border-b border-borderSoft shadow-md">
+        <h1 className="text-xl font-bold text-primary">Mavkus Chat</h1>
+        <div className="flex items-center gap-2">
+          <button
+            className="px-4 py-2 bg-primary rounded-xl hover:scale-105 transition"
+            onClick={() => setShowSettings(!showSettings)}
+          >
+            Settings
+          </button>
+          <button
+            className="px-4 py-2 bg-accentCyan rounded-xl hover:scale-105 transition"
+            onClick={logout}
+          >
+            Logout
+          </button>
         </div>
       </header>
 
-      {/* MAIN */}
-      <main className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-6 relative z-10">
-        <div className="lg:col-span-3">
-          <ChatContainer backendUrl={BACKEND_URL} />
-        </div>
-
-        <div className="lg:col-span-1">
-          <SettingsPanel />
-        </div>
+      <main className="flex-1 relative">
+        {showSettings && (
+          <div className="absolute top-4 right-4 z-50">
+            <SettingsPanel />
+          </div>
+        )}
+        <ChatContainer user={user} />
       </main>
+
+      <footer className="p-4 border-t border-borderSoft bg-bgCard/90">
+        <ChatInput user={user} />
+      </footer>
     </div>
   );
 }
-
-export default App;
