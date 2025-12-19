@@ -1,90 +1,49 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Stili globali */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Background sfumato animato */
+.bg-cyber-bg {
+  background: linear-gradient(270deg, #1b0052, #5b00ff, #ff00d0, #1b0052);
+  background-size: 800% 800%;
+  animation: gradientBG 15s ease infinite;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  min-height: 100vh;
+@keyframes gradientBG {
+  0% {background-position:0% 50%;}
+  50% {background-position:100% 50%;}
+  100% {background-position:0% 50%;}
 }
 
-/* Scrollbar personalizzata */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Panel semi-trasparente */
+.bg-cyber-panel {
+  background-color: rgba(15, 0, 50, 0.7);
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+/* Input cyber */
+.bg-cyber-input {
+  background-color: rgba(20, 0, 70, 0.8);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
+/* Neon colors */
+.glow {
+  text-shadow: 0 0 6px #ff00ff, 0 0 10px #ff00ff;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.shadow-neon {
+  box-shadow: 0 0 12px #ff00ff, 0 0 20px #ff00ff;
 }
 
-/* Animazioni */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.shadow-neon:hover {
+  box-shadow: 0 0 20px #ff00ff, 0 0 30px #ff00ff;
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease-out;
+.glow-button {
+  box-shadow: 0 0 8px #ff00ff, 0 0 16px #ff00ff;
+  transition: box-shadow 0.3s ease-in-out;
 }
 
-/* Utilities */
-.glass-effect {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.glow-button:hover {
+  box-shadow: 0 0 16px #ff00ff, 0 0 32px #ff00ff;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .hide-on-mobile {
-    display: none;
-  }
-  
-  .mobile-full {
-    width: 100%;
-  }
-}
-
-/* Loading spinner */
-.spinner {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* Neon colors variables */
+.neon-purple { background-color: #bb00ff; }
+.neon-pink { background-color: #ff00d0; }
+.neon-red { background-color: #ff0040; }
