@@ -136,7 +136,7 @@ function App() {
   return (
     <div className="min-h-screen bg-cyber-bg flex flex-col relative overflow-hidden">
       {/* HEADER */}
-      <header className="bg-cyber-header/90 backdrop-blur-md border-b border-neon-purple shadow-lg z-10">
+      <header className="bg-cyber-panel/90 backdrop-blur-md border-b border-neon-purple shadow-lg z-10">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Logo" className="w-12 h-12 rounded-full shadow-neon" />
@@ -155,9 +155,9 @@ function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowSettings(true)} className="px-4 py-2 bg-neon-purple hover:bg-neon-purple/80 text-black rounded-xl text-sm transition glow-button">⚙️ Impostazioni</button>
-            <button onClick={clearChat} disabled={chatHistory.length===0} className="px-4 py-2 bg-neon-purple hover:bg-neon-purple/80 text-black rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed glow-button">🗑️ Pulisci</button>
-            <button onClick={handleLogout} className="px-4 py-2 bg-neon-red hover:bg-neon-red/80 text-black rounded-xl text-sm glow-button">🚪 Esci</button>
+            <button onClick={() => setShowSettings(true)} className="px-4 py-2 neon-purple hover:opacity-80 text-black rounded-xl text-sm transition glow-button">⚙️ Impostazioni</button>
+            <button onClick={clearChat} disabled={chatHistory.length===0} className="px-4 py-2 neon-purple hover:opacity-80 text-black rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed glow-button">🗑️ Pulisci</button>
+            <button onClick={handleLogout} className="px-4 py-2 neon-red hover:opacity-80 text-black rounded-xl text-sm glow-button">🚪 Esci</button>
           </div>
         </div>
       </header>

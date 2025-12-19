@@ -1,4 +1,8 @@
 /* Background sfumato animato */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .bg-cyber-bg {
   background: linear-gradient(270deg, #1b0052, #5b00ff, #ff00d0, #1b0052);
   background-size: 800% 800%;
