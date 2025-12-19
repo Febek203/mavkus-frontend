@@ -10,7 +10,7 @@ import {
 } from '../firebase';
 
 const LoginRegister = ({ onAuthSuccess }) => {
-  const [activeTab, setActiveTab] = useState('login');
+  const [activeTab, setActiveTab] = useState('login'); // 'login' o 'register'
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -22,47 +22,94 @@ const LoginRegister = ({ onAuthSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  // Controlla se c'è già una sessione attiva
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log('Utente già autenticato:', user.email);
+        // Potresti voler reindirizzare automaticamente qui
+        // onAuthSuccess(user);
       }
     });
+    
     return () => unsubscribe();
   }, [onAuthSuccess]);
 
+  // Gestisci cambio input
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (message.text) setMessage({ type: '', text: '' });
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Cancella messaggi di errore quando l'utente inizia a digitare
+    if (message.text) {
+      setMessage({ type: '', text: '' });
+    }
   };
 
+  // Validazione form
   const validateForm = () => {
-    if (!formData.email) return setMessage({ type: 'error', text: '❌ L\'email è obbligatoria' });
-    if (!formData.email.includes('@')) return setMessage({ type: 'error', text: '❌ Inserisci un\'email valida' });
-    if (!formData.password) return setMessage({ type: 'error', text: '❌ La password è obbligatoria' });
-    if (activeTab === 'register') {
-      if (formData.password.length < 6) return setMessage({ type: 'error', text: '❌ La password deve avere almeno 6 caratteri' });
-      if (formData.password !== formData.confirmPassword) return setMessage({ type: 'error', text: '❌ Le password non coincidono' });
-      if (!formData.displayName.trim()) return setMessage({ type: 'error', text: '❌ Il nome è obbligatorio' });
+    if (!formData.email) {
+      setMessage({ type: 'error', text: '❌ L\'email è obbligatoria' });
+      return false;
     }
+
+    if (!formData.email.includes('@')) {
+      setMessage({ type: 'error', text: '❌ Inserisci un\'email valida' });
+      return false;
+    }
+
+    if (!formData.password) {
+      setMessage({ type: 'error', text: '❌ La password è obbligatoria' });
+      return false;
+    }
+
+    if (activeTab === 'register') {
+      if (formData.password.length < 6) {
+        setMessage({ type: 'error', text: '❌ La password deve avere almeno 6 caratteri' });
+        return false;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        setMessage({ type: 'error', text: '❌ Le password non coincidono' });
+        return false;
+      }
+
+      if (!formData.displayName.trim()) {
+        setMessage({ type: 'error', text: '❌ Il nome è obbligatorio' });
+        return false;
+      }
+    }
+
     return true;
   };
 
+  // Login con Google
   const handleGoogleLogin = async () => {
     setLoading(true);
     setMessage({ type: '', text: '' });
+
     try {
       const result = await signInWithGoogle();
+      
       if (result.success) {
         setMessage({ type: 'success', text: '✅ Login effettuato con successo!' });
-        setTimeout(() => onAuthSuccess(result.user), 1000);
+        
+        // Piccolo delay per mostrare il messaggio di successo
+        setTimeout(() => {
+          onAuthSuccess(result.user);
+        }, 1000);
       } else {
-        let errorMsg = result.error.includes('popup-closed-by-user')
-          ? 'Login annullato'
-          : result.error.includes('account-exists-with-different-credential')
-          ? 'Account già esistente con un altro metodo'
-          : result.error;
+        let errorMsg = result.error;
+        
+        if (result.error.includes('popup-closed-by-user')) {
+          errorMsg = 'Login annullato';
+        } else if (result.error.includes('account-exists-with-different-credential')) {
+          errorMsg = 'Account già esistente con un altro metodo di login';
+        }
+        
         setMessage({ type: 'error', text: `❌ ${errorMsg}` });
         setLoading(false);
       }
@@ -72,27 +119,56 @@ const LoginRegister = ({ onAuthSuccess }) => {
     }
   };
 
+  // Login/Register con Email
   const handleEmailAuth = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = activeTab === 'login'
-        ? await loginWithEmail(formData.email, formData.password)
-        : await registerWithEmail(formData.email, formData.password, formData.displayName);
+      let result;
+      
+      if (activeTab === 'login') {
+        result = await loginWithEmail(formData.email, formData.password);
+      } else {
+        result = await registerWithEmail(
+          formData.email, 
+          formData.password, 
+          formData.displayName
+        );
+      }
 
       if (result.success) {
-        setMessage({ type: 'success', text: `✅ ${activeTab === 'login' ? 'Login' : 'Registrazione'} completata!` });
-        setTimeout(() => onAuthSuccess(result.user), 1000);
+        setMessage({ 
+          type: 'success', 
+          text: `✅ ${activeTab === 'login' ? 'Login' : 'Registrazione'} completata!` 
+        });
+        
+        setTimeout(() => {
+          onAuthSuccess(result.user);
+        }, 1000);
       } else {
         let errorMsg = result.error;
-        if (result.error.includes('auth/email-already-in-use')) errorMsg = 'Questa email è già registrata.';
-        else if (result.error.includes('auth/user-not-found')) errorMsg = 'Account non trovato.';
-        else if (result.error.includes('auth/wrong-password')) errorMsg = 'Password errata.';
-        else if (result.error.includes('auth/too-many-requests')) errorMsg = 'Troppi tentativi, riprova più tardi.';
-        else if (result.error.includes('auth/weak-password')) errorMsg = 'Password troppo debole.';
-        else if (result.error.includes('auth/invalid-email')) errorMsg = 'Email non valida.';
+        
+        // Gestione errori specifici Firebase
+        if (result.error.includes('auth/email-already-in-use')) {
+          errorMsg = 'Questa email è già registrata. Prova ad accedere.';
+        } else if (result.error.includes('auth/user-not-found')) {
+          errorMsg = 'Account non trovato. Registrati prima.';
+        } else if (result.error.includes('auth/wrong-password')) {
+          errorMsg = 'Password errata. Riprova.';
+        } else if (result.error.includes('auth/too-many-requests')) {
+          errorMsg = 'Troppi tentativi. Riprova più tardi.';
+        } else if (result.error.includes('auth/weak-password')) {
+          errorMsg = 'Password troppo debole. Usa almeno 6 caratteri.';
+        } else if (result.error.includes('auth/invalid-email')) {
+          errorMsg = 'Email non valida.';
+        }
+        
         setMessage({ type: 'error', text: `❌ ${errorMsg}` });
         setLoading(false);
       }
@@ -102,18 +178,24 @@ const LoginRegister = ({ onAuthSuccess }) => {
     }
   };
 
+  // Reset form quando si cambia tab
   useEffect(() => {
-    setFormData({ email: '', password: '', displayName: '', confirmPassword: '' });
+    setFormData({
+      email: '',
+      password: '',
+      displayName: '',
+      confirmPassword: ''
+    });
     setMessage({ type: '', text: '' });
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Sfondo animato */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
       </div>
 
       <motion.div
@@ -122,6 +204,7 @@ const LoginRegister = ({ onAuthSuccess }) => {
         transition={{ duration: 0.5 }}
         className="relative w-full max-w-md"
       >
+        {/* Card */}
         <div className="bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-700/50 overflow-hidden">
           {/* Header */}
           <div className="p-8 text-center border-b border-gray-700/50">
@@ -142,7 +225,7 @@ const LoginRegister = ({ onAuthSuccess }) => {
 
           {/* Tabs */}
           <div className="flex border-b border-gray-700/50">
-            <motion.button
+            <button
               onClick={() => setActiveTab('login')}
               className={`flex-1 py-4 font-medium transition-all duration-300 ${
                 activeTab === 'login'
@@ -151,8 +234,8 @@ const LoginRegister = ({ onAuthSuccess }) => {
               }`}
             >
               Accedi
-            </motion.button>
-            <motion.button
+            </button>
+            <button
               onClick={() => setActiveTab('register')}
               className={`flex-1 py-4 font-medium transition-all duration-300 ${
                 activeTab === 'register'
@@ -161,10 +244,10 @@ const LoginRegister = ({ onAuthSuccess }) => {
               }`}
             >
               Registrati
-            </motion.button>
+            </button>
           </div>
 
-          {/* Form */}
+          {/* Content */}
           <div className="p-8">
             {/* Google Login */}
             <motion.button
@@ -189,6 +272,7 @@ const LoginRegister = ({ onAuthSuccess }) => {
               <div className="flex-1 border-t border-gray-600/50"></div>
             </div>
 
+            {/* Form */}
             <form onSubmit={handleEmailAuth}>
               <AnimatePresence mode="wait">
                 {activeTab === 'register' && (
@@ -199,7 +283,9 @@ const LoginRegister = ({ onAuthSuccess }) => {
                     exit={{ opacity: 0, height: 0 }}
                     className="mb-4 overflow-hidden"
                   >
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Nome</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Nome
+                    </label>
                     <input
                       type="text"
                       name="displayName"
@@ -214,7 +300,9 @@ const LoginRegister = ({ onAuthSuccess }) => {
               </AnimatePresence>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Email
+                </label>
                 <input
                   type="email"
                   name="email"
@@ -227,25 +315,29 @@ const LoginRegister = ({ onAuthSuccess }) => {
                 />
               </div>
 
-              <div className="mb-4 relative">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="La tua password"
-                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white placeholder-gray-500 pr-12 transition-all duration-300"
-                  autoComplete={activeTab === 'login' ? 'current-password' : 'new-password'}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                >
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
-                </button>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="La tua password"
+                    className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white placeholder-gray-500 pr-12 transition-all duration-300"
+                    autoComplete={activeTab === 'login' ? 'current-password' : 'new-password'}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
               </div>
 
               <AnimatePresence mode="wait">
@@ -257,7 +349,9 @@ const LoginRegister = ({ onAuthSuccess }) => {
                     exit={{ opacity: 0, height: 0 }}
                     className="mb-6 overflow-hidden"
                   >
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Conferma Password</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Conferma Password
+                    </label>
                     <input
                       type="password"
                       name="confirmPassword"
@@ -293,7 +387,7 @@ const LoginRegister = ({ onAuthSuccess }) => {
                 </div>
               )}
 
-              {/* Messaggi */}
+              {/* Message */}
               <AnimatePresence>
                 {message.text && (
                   <motion.div
@@ -318,7 +412,7 @@ const LoginRegister = ({ onAuthSuccess }) => {
                 )}
               </AnimatePresence>
 
-              {/* Submit */}
+              {/* Submit Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -340,18 +434,69 @@ const LoginRegister = ({ onAuthSuccess }) => {
             {/* Switch Tab */}
             <div className="mt-6 text-center">
               <p className="text-gray-400 text-sm">
-                {activeTab === 'login' ? 'Non hai un account?' : 'Hai già un account?'}{' '}
+                {activeTab === 'login' ? 'Non hai un account?' : 'Hai già un account?'}
                 <button
                   onClick={() => setActiveTab(activeTab === 'login' ? 'register' : 'login')}
-                  className="text-blue-400 hover:text-blue-300 font-medium transition"
+                  className="ml-2 text-blue-400 hover:text-blue-300 font-medium transition"
                 >
                   {activeTab === 'login' ? 'Registrati' : 'Accedi'}
                 </button>
               </p>
             </div>
           </div>
+
+          {/* Footer */}
+          <div className="px-8 py-6 border-t border-gray-700/50 bg-gray-900/50">
+            <div className="text-center">
+              <p className="text-xs text-gray-500">
+                <span className="text-gray-400">🔐</span> I tuoi dati sono criptati e protetti
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                MAVKUS AI • Assistente multi-intelligenza
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Features Floating */}
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-3 border border-gray-700/30 text-center">
+            <div className="text-blue-400 mb-1">⚡</div>
+            <p className="text-xs text-gray-400">AI veloce</p>
+          </div>
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-3 border border-gray-700/30 text-center">
+            <div className="text-purple-400 mb-1">🔒</div>
+            <p className="text-xs text-gray-400">Sicuro</p>
+          </div>
         </div>
       </motion.div>
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 };
