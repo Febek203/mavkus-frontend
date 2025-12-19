@@ -15,7 +15,7 @@ import {
   doc, 
   setDoc, 
   getDoc, 
-  updateDoca
+  updateDoc
 } from "firebase/firestore";
 
 // ============================================
