@@ -5,7 +5,7 @@ import ChatMessage from './components/ChatMessage';
 import TypingIndicator from './components/TypingIndicator';
 import SettingsPanel from './components/SettingsPanel';
 import LoginRegister from './components/LoginRegister';
-import logo from './assets/logo.png';
+import Avatar from './assets/avatar.png';
 import './App.css';
 
 function App() {
@@ -17,6 +17,10 @@ function App() {
   const [apiStatus, setApiStatus] = useState('checking');
   const [showSettings, setShowSettings] = useState(false);
   const [userStats, setUserStats] = useState(null);
+
+  // Nuovi stati per le API Keys
+  const [gropApiKey, setGropApiKey] = useState(() => localStorage.getItem('GROP_API_KEY') || '');
+  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('GEMINI_API_KEY') || '');
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -86,10 +90,17 @@ function App() {
     setIsTyping(true);
 
     try {
+      // Se vuoi, puoi passare anche le API keys qui in body
       const chatResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.uid, message: userMessage, enable_critique: true })
+        body: JSON.stringify({ 
+          user_id: user.uid, 
+          message: userMessage, 
+          enable_critique: true,
+          grop_api_key: gropApiKey,
+          gemini_api_key: geminiApiKey
+        })
       });
 
       const chatData = await chatResponse.json();
@@ -118,6 +129,15 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isTyping]);
 
+  // Salva le API key in localStorage quando cambiano
+  useEffect(() => {
+    localStorage.setItem('GROP_API_KEY', gropApiKey);
+  }, [gropApiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('GEMINI_API_KEY', geminiApiKey);
+  }, [geminiApiKey]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-cyber-bg flex items-center justify-center">
@@ -139,7 +159,8 @@ function App() {
       <header className="bg-cyber-panel/90 backdrop-blur-md border-b border-neon-purple shadow-lg z-10">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Logo" className="w-12 h-12 rounded-full shadow-neon" />
+            {/* Qui aggiungo la classe per fixare avatar proporzioni */}
+            <img src={user.photoURL || Avatar} alt="Avatar" className="w-12 h-12 rounded-full shadow-neon avatar-fit-cover" />
             <div>
               <h1 className="text-2xl font-bold text-neon-purple tracking-wide glow">MAVKUS AI</h1>
               <div className="flex items-center gap-2">
@@ -214,7 +235,16 @@ function App() {
 
       {/* SETTINGS PANEL */}
       <AnimatePresence>
-        {showSettings && <SettingsPanel user={user} onClose={() => setShowSettings(false)} />}
+        {showSettings && (
+          <SettingsPanel 
+            user={user} 
+            onClose={() => setShowSettings(false)} 
+            gropApiKey={gropApiKey}
+            setGropApiKey={setGropApiKey}
+            geminiApiKey={geminiApiKey}
+            setGeminiApiKey={setGeminiApiKey}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
